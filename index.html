@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Mosca</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #4a8f3c;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .game-container {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 60px);
+            background-color: #8bc34a;
+            overflow: hidden;
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxkZWZzPjxwYXR0ZXJuIGlkPSJwYXR0ZXJuIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiIHBhdHRlcm5UcmFuc2Zvcm09InJvdGF0ZSg0NSkiPjxyZWN0IHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgZmlsbD0iI2Q4ZWRmNSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNwYXR0ZXJuKSIvPjwvc3ZnPg==');
+        }
+
+        .score-panel {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 20px;
+            background-color: #2c5a24;
+            color: white;
+            font-weight: bold;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-sizing: border-box;
+        }
+
+        .score, .time {
+            font-size: 1.2em;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .fly {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23000000"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            transition: transform 0.1s;
+            z-index: 10;
+            will-change: transform;
+        }
+
+        .fly.frozen {
+            filter: drop-shadow(0 0 8px #00f7ff) brightness(1.2);
+            animation: pulse 1s infinite;
+        }
+
+        .game-object {
+            position: absolute;
+            width: 140px;
+            height: 140px;
+            background-color: rgba(255, 255, 255, 0.85);
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+            will-change: transform;
+        }
+
+        .start-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #4a8f3c 0%, #2c5a24 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 3000;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .menu-content {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 15px;
+            max-width: 600px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .start-btn {
+            margin-top: 30px;
+            padding: 15px 40px;
+            font-size: 1.5em;
+            background-color: #ffcc00;
+            color: #2c5a24;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .start-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(0, 0, 0, 0.3);
+            background-color: #ffd93d;
+        }
+
+        .start-btn:active {
+            transform: translateY(1px);
+        }
+
+        .game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.8) 100%);
+            color: white;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+        }
+        
+        .game-over-content {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px 60px;
+            border-radius: 15px;
+            max-width: 600px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .game-over h2 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            color: #ffcc00;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .final-score {
+            font-size: 2em;
+            margin-bottom: 30px;
+        }
+
+        .control-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 30px;
+            font-size: 18px;
+            background-color: #2c5a24;
+            color: white;
+            border: 2px solid white;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            z-index: 1000;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .restart-btn:hover {
+            background-color: #45a049;
+        }
+
+        .highlight {
+            animation: highlight 0.5s;
+        }
+
+        @keyframes highlight {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="start-menu" id="startMenu">
+        <h1>A Mosca</h1>
+        <div class="menu-content">
+            <h2>Bem-vindo ao Jogo!</h2>
+            <p>Clique na mosca para pará-la e marcar pontos quando ela estiver sobre um objeto.</p>
+            <button class="start-btn" id="startBtn">Iniciar Jogo</button>
+        </div>
+    </div>
+
+    <div class="game-container" id="gameContainer" style="display: none;">
+        <div class="score-panel">
+            <div class="score">Pontuação: <span id="score">0</span></div>
+            <div class="time">Tempo: <span id="time">60</span>s</div>
+        </div>
+        <div class="fly" id="fly"></div>
+        <!-- Game objects will be added here by JavaScript -->
+        <div class="game-over" id="gameOver">
+            <div class="game-over-content">
+                <h2>Fim de Jogo!</h2>
+                <div class="final-score">Sua pontuação: <span id="finalScore" style="color: #ffcc00; font-size: 1.5em; font-weight: bold;">0</span></div>
+                <button class="restart-btn" id="restartBtn">Jogar Novamente</button>
+            </div>
+        </div>
+    </div>
+    <button class="control-btn off" id="toggleBtn">Ligar</button>
+    
+    <!-- Audio elements -->
+    <audio id="buzzSound" loop preload="auto" style="display: none;">
+        <source src="fly-129618.mp3" type="audio/mp3">
+        Your browser does not support the audio element.
+    </audio>
+    <audio id="pointSound" preload="auto" style="display: none;">
+        <source src="collect-points-190037.mp3" type="audio/mp3">
+        Your browser does not support the audio element.
+    </audio>
+
+    <script>
+        // Sound effects
+        let buzzSound;
+        let pointSound;
+        let isSoundEnabled = false;
+        
+        // Initialize audio
+        function initAudio() {
+            if (isSoundEnabled) return;
+            
+            buzzSound = document.getElementById('buzzSound');
+            pointSound = document.getElementById('pointSound');
+            if (!buzzSound || !pointSound) return;
+            
+            // Set volume and preload
+            buzzSound.volume = 0.3;
+            pointSound.volume = 0.5;
+            buzzSound.load(); // Force reload the audio
+            pointSound.load();
+            
+            // iOS requires direct play on user interaction
+            const enableSound = () => {
+                if (buzzSound.paused) {
+                    const playPromise = buzzSound.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(error => {
+                            console.log('Audio play failed:', error);
+                        });
+                    }
+                }
+                isSoundEnabled = true;
+                // Remove these event listeners after first interaction
+                document.removeEventListener('click', enableSound);
+                document.removeEventListener('touchstart', enableSound);
+            };
+            
+            // Add event listeners for first interaction
+            document.addEventListener('click', enableSound, { once: true });
+            document.addEventListener('touchstart', enableSound, { once: true });
+            
+            // Also try to enable on any game interaction
+            document.getElementById('gameContainer').addEventListener('click', () => {
+                if (isSoundEnabled && gameState.fly.isMoving && buzzSound.paused) {
+                    buzzSound.play().catch(e => console.log('Audio play failed:', e));
+                }
+            });
+        }
+        
+        // Play or stop buzzing sound
+        function updateBuzzSound() {
+            if (!buzzSound) {
+                buzzSound = document.getElementById('buzzSound');
+                if (!buzzSound) return;
+                buzzSound.volume = 0.3;
+            }
+            
+            if (gameState.fly.isMoving) {
+                if (buzzSound.paused) {
+                    const playPromise = buzzSound.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(e => {
+                            console.log('Audio play failed, will retry on next interaction');
+                        });
+                    }
+                }
+            } else {
+                if (!buzzSound.paused) {
+                    buzzSound.pause();
+                    buzzSound.currentTime = 0;
+                }
+            }
+        }
+        
+        // Game state
+        const gameState = {
+            score: 0,
+            timeLeft: 60,
+            isGameOver: false,
+            fly: {
+                x: 100,
+                y: 100,
+                dx: 24,
+                dy: 21,
+                speed: 24,
+                directionChangeTimer: 0,
+                isMoving: true,
+                element: null,
+                targetObject: null,
+                targetChangeCooldown: 0,
+                lastScoredObject: null  // Track the last object that gave points
+            },
+            objects: [
+                // Top row
+                { x: '10%', y: '15%', width: 140, height: 140, value: 30, element: null },
+                { x: '40%', y: '10%', width: 140, height: 140, value: 50, element: null },
+                { x: '70%', y: '15%', width: 140, height: 140, value: 20, element: null },
+                // Middle row
+                { x: '20%', y: '45%', width: 140, height: 140, value: 40, element: null },
+                { x: '60%', y: '50%', width: 140, height: 140, value: 60, element: null },
+                // Bottom row
+                { x: '10%', y: '75%', width: 140, height: 140, value: 70, element: null },
+                { x: '50%', y: '80%', width: 140, height: 140, value: 90, element: null },
+                { x: '80%', y: '70%', width: 140, height: 140, value: 80, element: null }
+            ],
+            gameContainer: null,
+            gameLoopId: null,
+            timerId: null
+        };
+
+        // DOM elements
+        const toggleBtn = document.getElementById('toggleBtn');
+        const gameContainer = document.getElementById('gameContainer');
+        const scoreElement = document.getElementById('score');
+        const timeElement = document.getElementById('time');
+        const gameOverElement = document.getElementById('gameOver');
+        const finalScoreElement = document.getElementById('finalScore');
+        const restartBtn = document.getElementById('restartBtn');
+        const flyElement = document.getElementById('fly');
+
+        // Object images (using emojis as placeholders)
+        const objectImages = [
+            '🍎', '🍕', '📱', '💻', '📚', '🎮'
+        ];
+
+        // Initialize game
+        function initGame() {
+            gameState.gameContainer = gameContainer;
+            gameState.fly.element = flyElement;
+            
+            // Create game objects
+            createObjects();
+            
+            // Set up event listeners for both mouse and touch
+            gameContainer.addEventListener('click', handleContainerClick);
+            gameContainer.addEventListener('touchend', handleContainerClick, { passive: false });
+            restartBtn.addEventListener('click', restartGame);
+            
+            // Hide the toggle button as it's no longer needed
+            toggleBtn.style.display = 'none';
+            
+            // Start game loop
+            gameState.gameLoopId = requestAnimationFrame(gameLoop);
+            
+            // Start timer
+            startTimer();
+        }
+
+        // Create game objects
+        function createObjects() {
+            const container = gameState.gameContainer.getBoundingClientRect();
+            
+            gameState.objects.forEach((obj, index) => {
+                const objElement = document.createElement('div');
+                objElement.className = 'game-object';
+                objElement.style.width = '140px';
+                objElement.style.height = '140px';
+                
+                // Handle percentage and pixel values for positioning
+                const x = typeof obj.x === 'string' && obj.x.includes('%') 
+                    ? (parseInt(obj.x) / 100) * (container.width - 140) 
+                    : obj.x;
+                const y = typeof obj.y === 'string' && obj.y.includes('%')
+                    ? (parseInt(obj.y) / 100) * (container.height - 140)
+                    : obj.y;
+                    
+                // Update object position
+                obj.x = x;
+                obj.y = y;
+                
+                objElement.style.left = `${x}px`;
+                objElement.style.top = `${y}px`;
+                
+                const img = document.createElement('div');
+                img.className = 'object-img';
+                img.style.fontSize = '60px';
+                img.textContent = objectImages[index % objectImages.length];
+                
+                const value = document.createElement('div');
+                value.className = 'point-value';
+                value.textContent = `${obj.value} pts/s`;
+                
+                objElement.appendChild(img);
+                objElement.appendChild(value);
+                gameContainer.appendChild(objElement);
+                
+                // Store reference to the element
+                obj.element = objElement;
+            });
+        }
+
+        // Game loop
+        function gameLoop() {
+            updateFlyPosition();
+            checkCollisions();
+            gameState.gameLoopId = requestAnimationFrame(gameLoop);
+        }
+
+        // Update fly position
+        function updateFlyPosition() {
+            if (!gameState.fly.isMoving) return;
+
+            const fly = gameState.fly;
+            const container = gameState.gameContainer.getBoundingClientRect();
+            
+            // Add more erratic movement
+            fly.directionChangeTimer--;
+            if (fly.directionChangeTimer <= 0) {
+                // Change direction more frequently
+                fly.directionChangeTimer = Math.floor(Math.random() * 30) + 10; // 10-40 frames
+                
+                // Add random movement variation
+                const randomAngle = Math.random() * Math.PI * 2;
+                const randomSpeed = 6 + Math.random() * 12; // Random speed between 6-18
+                
+                // Keep some of the current momentum
+                fly.dx += Math.cos(randomAngle) * randomSpeed;
+                fly.dy += Math.sin(randomAngle) * randomSpeed;
+                
+                // Limit maximum speed
+                const speed = Math.sqrt(fly.dx * fly.dx + fly.dy * fly.dy);
+                const maxSpeed = 30;
+                if (speed > maxSpeed) {
+                    fly.dx = (fly.dx / speed) * maxSpeed;
+                    fly.dy = (fly.dy / speed) * maxSpeed;
+                }
+            }
+            
+            // Ensure fly always has a target
+            if (!fly.targetObject || fly.targetChangeCooldown <= 0) {
+                // Find a new target
+                if (gameState.objects.length > 0) {
+                    // Create array of objects excluding the last target
+                    const availableTargets = gameState.objects.filter(obj => obj !== fly.lastTarget);
+                    
+                    if (availableTargets.length > 0) {
+                        // Choose a random target
+                        const randomIndex = Math.floor(Math.random() * availableTargets.length);
+                        fly.targetObject = availableTargets[randomIndex];
+                        fly.targetChangeCooldown = 90; // 1.5 second cooldown (reduced from 2s)
+                        
+                        // Calculate direction to target
+                        const targetX = fly.targetObject.x + 30 - 20; // Center of object - half fly width
+                        const targetY = fly.targetObject.y + 30 - 20; // Center of object - half fly height
+                        const dx = targetX - fly.x;
+                        const dy = targetY - fly.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (dist > 0) {
+                            // Set direction towards target with some randomness
+                            const randomOffset = (Math.random() - 0.5) * 0.5; // -0.25 to 0.25
+                            fly.dx = (dx / dist) * 24 + (randomOffset * 3);
+                            fly.dy = (dy / dist) * 24 + (randomOffset * 3);
+                        }
+                    }
+                }
+            }
+            
+            // If we have a target, adjust direction with more randomness
+            if (fly.targetObject) {
+                const targetX = fly.targetObject.x + 30 - 20;
+                const targetY = fly.targetObject.y + 30 - 20;
+                const dx = targetX - fly.x;
+                const dy = targetY - fly.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist > 0) {
+                    // Calculate desired direction with some randomness
+                    const randomOffset = (Math.random() - 0.5) * 0.8; // -0.4 to 0.4
+                    const targetDx = (dx / dist) * 24 + (randomOffset * 3);
+                    const targetDy = (dy / dist) * 24 + (randomOffset * 3);
+                    
+                    // More aggressive steering
+                    const steeringFactor = 0.15;
+                    fly.dx += (targetDx - fly.dx) * steeringFactor;
+                    fly.dy += (targetDy - fly.dy) * steeringFactor;
+                    
+                    // Maintain speed with some variation
+                    const currentSpeed = Math.sqrt(fly.dx * fly.dx + fly.dy * fly.dy);
+                    const targetSpeed = 21 + Math.random() * 6; // 21-27 speed
+                    if (currentSpeed > 0) {
+                        fly.dx = (fly.dx / currentSpeed) * targetSpeed;
+                        fly.dy = (fly.dy / currentSpeed) * targetSpeed;
+                    }
+                }
+            }
+            
+            // Update position
+            fly.x += fly.dx;
+            fly.y += fly.dy;
+            
+            // More aggressive wall bouncing with more randomness
+            if (fly.x < 0) {
+                fly.x = 0;
+                fly.dx = Math.abs(fly.dx) * (0.7 + Math.random() * 0.6);
+                // Add vertical movement on wall hit
+                fly.dy += (Math.random() - 0.5) * 12;
+            } else if (fly.x > container.width - 40) {
+                fly.x = container.width - 40;
+                fly.dx = -Math.abs(fly.dx) * (0.7 + Math.random() * 0.6);
+                // Add vertical movement on wall hit
+                fly.dy += (Math.random() - 0.5) * 12;
+            }
+            
+            if (fly.y < 40) { // 40px offset for score panel
+                fly.y = 40;
+                fly.dy = Math.abs(fly.dy) * (0.7 + Math.random() * 0.6);
+                // Add horizontal movement on wall hit
+                fly.dx += (Math.random() - 0.5) * 12;
+            } else if (fly.y > container.height - 40) {
+                fly.y = container.height - 40;
+                fly.dy = -Math.abs(fly.dy) * (0.7 + Math.random() * 0.6);
+                // Add horizontal movement on wall hit
+                fly.dx += (Math.random() - 0.5) * 12;
+            }
+            
+            // Limit maximum speed after all adjustments
+            const maxSpeed = 36;
+            const speed = Math.sqrt(fly.dx * fly.dx + fly.dy * fly.dy);
+            if (speed > maxSpeed) {
+                fly.dx = (fly.dx / speed) * maxSpeed;
+                fly.dy = (fly.dy / speed) * maxSpeed;
+            }
+            
+            // Update target cooldown
+            if (fly.targetChangeCooldown > 0) {
+                fly.targetChangeCooldown--;
+            }
+            
+            // If we have a target object, adjust direction slightly to ensure we reach it
+            if (fly.targetObject) {
+                const targetX = fly.targetObject.x + 30 - 20;
+                const targetY = fly.targetObject.y + 30 - 20;
+                const dx = targetX - fly.x;
+                const dy = targetY - fly.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist > 0) {
+                    // Adjust direction slightly towards target (like gravity)
+                    const adjustFactor = 0.1; // How strongly to adjust towards target
+                    const currentSpeed = Math.sqrt(fly.dx * fly.dx + fly.dy * fly.dy);
+                    
+                    // Calculate desired direction
+                    const targetDx = (dx / dist) * currentSpeed;
+                    const targetDy = (dy / dist) * currentSpeed;
+                    
+                    // Gradually adjust current direction towards target direction
+                    fly.dx += (targetDx - fly.dx) * adjustFactor;
+                    fly.dy += (targetDy - fly.dy) * adjustFactor;
+                    
+                    // Maintain speed
+                    const newSpeed = Math.sqrt(fly.dx * fly.dx + fly.dy * fly.dy);
+                    if (newSpeed > 0) {
+                        fly.dx = (fly.dx / newSpeed) * currentSpeed;
+                        fly.dy = (fly.dy / newSpeed) * currentSpeed;
+                    }
+                }
+            }
+            
+            // Update DOM
+            fly.element.style.left = `${fly.x}px`;
+            fly.element.style.top = `${fly.y}px`;
+        }
+
+        // Check for collisions with objects
+        function checkCollisions() {
+            // Only check for scoring when the fly is frozen (not moving)
+            if (!gameState.isOn || gameState.fly.isMoving) return;
+
+            const fly = gameState.fly;
+            const flyRect = {
+                x: fly.x,
+                y: fly.y,
+                width: 40,
+                height: 40
+            };
+
+            // Track if we're currently on any object
+            let isOnObject = false;
+            
+            gameState.objects.forEach(obj => {
+                const objRect = {
+                    x: obj.x,
+                    y: obj.y,
+                    width: 60,
+                    height: 60
+                };
+
+                if (isColliding(flyRect, objRect)) {
+                    isOnObject = true;
+                    
+                    // Add points based on object value (per second)
+                    gameState.score += obj.value / 60; // 60 FPS
+                    scoreElement.textContent = Math.floor(gameState.score);
+                    
+                    // Add visual feedback
+                    if (!obj.element.classList.contains('highlight')) {
+                        obj.element.classList.add('highlight');
+                        setTimeout(() => {
+                            obj.element.classList.remove('highlight');
+                        }, 1000);
+                    }
+                }
+            });
+            
+            // Visual feedback for when not on any object
+            if (!isOnObject) {
+                gameState.fly.element.style.filter = 'grayscale(100%)';
+            } else {
+                gameState.fly.element.style.filter = 'none';
+            }
+        }
+
+        // Check if two rectangles are colliding
+        function isColliding(rect1, rect2) {
+            return !(rect1.x > rect2.x + rect2.width || 
+                    rect1.x + rect1.width < rect2.x || 
+                    rect1.y > rect2.y + rect2.height || 
+                    rect1.y + rect1.height < rect2.y);
+        }
+
+        // Toggle fly movement on touch/click
+        function toggleFlyMovement() {
+            const fly = gameState.fly;
+            fly.isMoving = !fly.isMoving;
+            updateBuzzSound();
+            
+            if (fly.isMoving) {
+                // If we're starting to move and we're on an object, find a new target
+                const currentObj = getObjectAtPosition(fly.x, fly.y);
+                if (currentObj) {
+                    // Find a different random object to fly to
+                    const otherObjects = gameState.objects.filter(obj => obj !== currentObj);
+                    if (otherObjects.length > 0) {
+                        const randomIndex = Math.floor(Math.random() * otherObjects.length);
+                        const targetObj = otherObjects[randomIndex];
+                        
+                        // Calculate direction to new target
+                        const dx = (targetObj.x + 30) - (fly.x + 20);
+                        const dy = (targetObj.y + 30) - (fly.y + 20);
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (dist > 0) {
+                            // Set direction towards the new target
+                            fly.dx = (dx / dist) * 6;
+                            fly.dy = (dy / dist) * 6;
+                            fly.targetObject = targetObj;
+                        }
+                    }
+                }
+                fly.element.classList.remove('frozen');
+            } else {
+                // When stopping, check for points if on an object
+                const currentObj = getObjectAtPosition(fly.x, fly.y);
+                if (currentObj && currentObj !== fly.lastTarget) {
+                    // Award points once per landing on this object
+                    gameState.score += currentObj.value;
+                    scoreElement.textContent = Math.floor(gameState.score);
+                    fly.lastTarget = currentObj;
+                    
+                    // Play point sound effect
+                    if (pointSound) {
+                        pointSound.currentTime = 0; // Rewind to start
+                        pointSound.play().catch(e => console.log('Point sound play failed:', e));
+                    }
+                    
+                    // Visual feedback
+                    currentObj.element.classList.add('highlight');
+                    setTimeout(() => {
+                        currentObj.element.classList.remove('highlight');
+                    }, 500);
+                }
+                fly.element.classList.add('frozen');
+            }
+        }
+
+        // Get object at specific position, if any
+        function getObjectAtPosition(x, y) {
+            for (const obj of gameState.objects) {
+                const objRect = {
+                    x: obj.x,
+                    y: obj.y,
+                    width: 120,
+                    height: 120
+                };
+
+                const flyRect = {
+                    x: x,
+                    y: y,
+                    width: 40,
+                    height: 40
+                };
+
+                if (isColliding(flyRect, objRect)) {
+                    return obj;
+                }
+            }
+            return null;
+        }
+
+        // Handle container click/touch
+        function handleContainerClick(e) {
+            if (gameState.isGameOver) return;
+            e.preventDefault(); // Prevent any default touch behavior
+            toggleFlyMovement();
+        }
+
+        // Start timer
+        function startTimer() {
+            gameState.timerId = setInterval(() => {
+                gameState.timeLeft--;
+                timeElement.textContent = gameState.timeLeft;
+                
+                if (gameState.timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        // End game
+        function endGame() {
+            clearInterval(gameState.timerId);
+            cancelAnimationFrame(gameState.gameLoopId);
+            gameState.isGameOver = true;
+            
+            // Show game over screen
+            finalScoreElement.textContent = Math.floor(gameState.score);
+            gameOverElement.style.display = 'flex';
+        }
+
+        // Restart game
+        function restartGame() {
+            // Reset game state
+            gameState.score = 0;
+            gameState.timeLeft = 60;
+            gameState.isGameOver = false;
+            scoreElement.textContent = '0';
+            timeElement.textContent = '60';
+            
+            // Reset fly position
+            const fly = gameState.fly;
+            fly.x = 100;
+            fly.y = 100;
+            fly.dx = 24;
+            fly.dy = 21;
+            fly.isMoving = true;
+            fly.targetObject = null;
+            fly.lastScoredObject = null;
+            
+            if (fly.element) {
+                fly.element.style.left = fly.x + 'px';
+                fly.element.style.top = fly.y + 'px';
+                fly.element.classList.remove('frozen');
+            }
+            
+            // Hide game over screen and show start menu
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('startMenu').style.display = 'flex';
+            document.getElementById('gameContainer').style.display = 'none';
+            
+            // Clear any existing game loop
+            if (gameState.gameLoopId) {
+                cancelAnimationFrame(gameState.gameLoopId);
+            }
+            
+            // Clear any existing timer
+            if (gameState.timerId) {
+                clearInterval(gameState.timerId);
+            }
+            
+            // Re-initialize the start button
+            const startBtn = document.getElementById('startBtn');
+            const startMenu = document.getElementById('startMenu');
+            const gameContainer = document.getElementById('gameContainer');
+            
+            startBtn.onclick = function() {
+                startMenu.style.display = 'none';
+                gameContainer.style.display = 'block';
+                initGame();
+            };
+        }
+
+        // Initialize the game when the page loads
+        window.onload = function() {
+            // Set up the start button
+            const startBtn = document.getElementById('startBtn');
+            const startMenu = document.getElementById('startMenu');
+            const gameContainer = document.getElementById('gameContainer');
+            
+            startBtn.addEventListener('click', function() {
+                startMenu.style.display = 'none';
+                gameContainer.style.display = 'block';
+                initGame();
+            });
+            
+            // Initialize audio context but don't play sound yet
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            // Set up the audio element
+            buzzSound = document.getElementById('buzzSound');
+            buzzSound.volume = 0.3;
+            initAudio();
+        }
+    </script>
+</body>
+</html>
