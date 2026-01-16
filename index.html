@@ -70,8 +70,8 @@
 
         .game-object {
             position: absolute;
-            width: 140px;
-            height: 140px;
+            width: 100px;
+            height: 100px;
             background-color: rgba(255, 255, 255, 0.85);
             border-radius: 15px;
             display: flex;
@@ -79,67 +79,87 @@
             justify-content: center;
             align-items: center;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
-            transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s, width 0.3s, height 0.3s;
+            transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
             will-change: transform;
         }
+        
+        .object-img {
+            font-size: 40px !important;
+            line-height: 1;
+            margin-bottom: 5px;
+        }
+        
+        .point-value {
+            font-size: 0.8em !important;
+            font-weight: bold;
+            color: #2c5a24;
+        }
 
-        /* Estilos para tablets */
-        @media (max-width: 1024px) {
+        /* Estilos para desktops grandes */
+        @media (min-width: 1025px) {
             .game-object {
-                width: 120px;
-                height: 120px;
+                width: 140px !important;
+                height: 140px !important;
             }
             
-            .game-object .object-img {
+            .object-img {
+                font-size: 60px !important;
+            }
+            
+            .point-value {
+                font-size: 1em !important;
+            }
+        }
+        
+        /* Estilos para tablets */
+        @media (max-width: 1024px) and (min-width: 769px) {
+            .game-object {
+                width: 110px !important;
+                height: 110px !important;
+            }
+            
+            .object-img {
                 font-size: 50px !important;
-            }
-            
-            .game-object .point-value {
-                font-size: 0.9em !important;
             }
         }
         
         /* Estilos para celulares */
-        @media (max-width: 768px) {
+        @media (max-width: 768px) and (min-width: 481px) {
             .game-object {
-                width: 100px;
-                height: 100px;
+                width: 90px !important;
+                height: 90px !important;
             }
             
-            .game-object .object-img {
+            .object-img {
                 font-size: 40px !important;
             }
             
-            .game-object .point-value {
-                font-size: 0.8em !important;
-                margin-top: 5px;
-            }
-            
             .score, .time {
-                font-size: 1em !important;
-                padding: 0 10px;
+                font-size: 0.9em !important;
+                padding: 0 8px !important;
             }
         }
         
         /* Estilos para celulares pequenos */
         @media (max-width: 480px) {
             .game-object {
-                width: 80px;
-                height: 80px;
+                width: 70px !important;
+                height: 70px !important;
             }
             
-            .game-object .object-img {
-                font-size: 32px !important;
+            .object-img {
+                font-size: 30px !important;
+                margin-bottom: 2px !important;
             }
             
-            .game-object .point-value {
-                font-size: 0.7em !important;
-                margin-top: 3px;
+            .point-value {
+                font-size: 0.65em !important;
+                margin-top: 0 !important;
             }
             
             .score, .time {
-                font-size: 0.9em !important;
-                padding: 0 5px;
+                font-size: 0.8em !important;
+                padding: 0 5px !important;
             }
         }
 
@@ -484,12 +504,11 @@
                 
                 const img = document.createElement('div');
                 img.className = 'object-img';
-                img.style.fontSize = '60px';
                 img.textContent = objectImages[index % objectImages.length];
                 
                 const value = document.createElement('div');
                 value.className = 'point-value';
-                value.textContent = `${obj.value} pts/s`;
+                value.textContent = `${obj.value} pts`;
                 
                 objElement.appendChild(img);
                 objElement.appendChild(value);
