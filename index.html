@@ -79,8 +79,68 @@
             justify-content: center;
             align-items: center;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
-            transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s, width 0.3s, height 0.3s;
             will-change: transform;
+        }
+
+        /* Estilos para tablets */
+        @media (max-width: 1024px) {
+            .game-object {
+                width: 120px;
+                height: 120px;
+            }
+            
+            .game-object .object-img {
+                font-size: 50px !important;
+            }
+            
+            .game-object .point-value {
+                font-size: 0.9em !important;
+            }
+        }
+        
+        /* Estilos para celulares */
+        @media (max-width: 768px) {
+            .game-object {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .game-object .object-img {
+                font-size: 40px !important;
+            }
+            
+            .game-object .point-value {
+                font-size: 0.8em !important;
+                margin-top: 5px;
+            }
+            
+            .score, .time {
+                font-size: 1em !important;
+                padding: 0 10px;
+            }
+        }
+        
+        /* Estilos para celulares pequenos */
+        @media (max-width: 480px) {
+            .game-object {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .game-object .object-img {
+                font-size: 32px !important;
+            }
+            
+            .game-object .point-value {
+                font-size: 0.7em !important;
+                margin-top: 3px;
+            }
+            
+            .score, .time {
+                font-size: 0.9em !important;
+                padding: 0 5px;
+            }
         }
 
         .start-menu {
@@ -393,18 +453,26 @@
         function createObjects() {
             const container = gameState.gameContainer.getBoundingClientRect();
             
+            // Get object size from CSS or use default 140px
+            const getObjectSize = () => {
+                if (window.innerWidth <= 480) return 80;  // Small phones
+                if (window.innerWidth <= 768) return 100; // Phones
+                if (window.innerWidth <= 1024) return 120; // Tablets
+                return 140; // Desktop
+            };
+            
+            const objectSize = getObjectSize();
+            
             gameState.objects.forEach((obj, index) => {
                 const objElement = document.createElement('div');
                 objElement.className = 'game-object';
-                objElement.style.width = '140px';
-                objElement.style.height = '140px';
                 
                 // Handle percentage and pixel values for positioning
                 const x = typeof obj.x === 'string' && obj.x.includes('%') 
-                    ? (parseInt(obj.x) / 100) * (container.width - 140) 
+                    ? (parseInt(obj.x) / 100) * (container.width - objectSize) 
                     : obj.x;
                 const y = typeof obj.y === 'string' && obj.y.includes('%')
-                    ? (parseInt(obj.y) / 100) * (container.height - 140)
+                    ? (parseInt(obj.y) / 100) * (container.height - objectSize)
                     : obj.y;
                     
                 // Update object position
@@ -823,8 +891,20 @@
             };
         }
 
+        // Handle window resize
+        function handleResize() {
+            if (gameState.gameContainer) {
+                // Recreate objects when window is resized
+                const objects = gameState.gameContainer.querySelectorAll('.game-object');
+                objects.forEach(obj => obj.remove());
+                createObjects();
+            }
+        }
+
         // Initialize the game when the page loads
         window.onload = function() {
+            // Add resize event listener
+            window.addEventListener('resize', handleResize);
             // Set up the start button
             const startBtn = document.getElementById('startBtn');
             const startMenu = document.getElementById('startMenu');
